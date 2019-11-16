@@ -40,7 +40,7 @@ port = 5005
 client = udp_client.SimpleUDPClient(ip, port)
 
 cam1_proximity = [1, 1, 1, 1, 1]
-cam2_proximity = [0, 0, 0, 0, 0]
+cam2_proximity = [1, 1, 1, 1, 1]
 
 # make sure right_boundary > left_boundary
 left_boundary_cam1 = 0
