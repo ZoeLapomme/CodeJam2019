@@ -35,12 +35,12 @@ joint_labels = {
 }
 
 # Setting up address to send data to about proximity to zone
-ip = "127.0.0.1"
+ip = "192.168.43.1"
 port = 5005
 client = udp_client.SimpleUDPClient(ip, port)
 
 cam1_proximity = [1, 1, 1, 1, 1]
-cam2_proximity = [1, 1, 1, 1, 1]
+cam2_proximity = [0, 0, 0, 0, 0]
 
 # make sure right_boundary > left_boundary
 left_boundary_cam1 = 0
@@ -84,7 +84,7 @@ def compute_trespassing (arr_number, cam1):
 # Find what is the leftmost point of the person
 def compute_leftmost (arr_number):
 
-    # set it beyond maximum
+    # set it above maximum
     leftmost_value = 1.1
     leftmost_index = -1
     index = 0
@@ -145,13 +145,12 @@ def cam1(identification, *args):
 
     # Print id and body part trespassing
     if trespassing:
-        print(0)
         proximity = 0
     else:
         # Returns value from 0 to 1 where 0 means we are trespassing and 1 means we are far away
         proximity = check_proximity(arr_positions, True)
-        print(proximity)
 
+    # Set this user's proximity
     cam1_proximity[id] = proximity
     compute_full_proximity(id)
 
@@ -170,13 +169,12 @@ def cam2(identification, *args):
 
     # Print id and body part trespassing
     if trespassing:
-        print(0)
         proximity = 0
     else:
         # Returns value from 0 to 1 where 0 means we are trespassing and 1 means we are far away
         proximity = check_proximity(arr_positions, False)
-        print(proximity)
 
+    # set this user's proximity
     cam2_proximity[id] = proximity
     compute_full_proximity(id)
 
@@ -184,11 +182,15 @@ def cam2(identification, *args):
 # Checks how close the user is and computes proximity
 def compute_full_proximity(id):
 
-    # Get how close user is based on both cameras
-    prox = min (cam1_proximity[id], cam2_proximity[id])
+    # Get distance from zone (use Pythagorean theorem)
+    proximity = math.sqrt((cam1_proximity[id]) ** 2 + cam2_proximity[id] ** 2)
+
+    if proximity > ( (max((right_boundary_cam1 - left_boundary_cam1), (right_boundary_cam2 - left_boundary_cam2))) / 2):
+        proximity = 1
+    time.sleep(0.1)
     # Address we specify is cam and then id of the user
-    client.send_message("/cam/" + str(id), prox)
-    print(prox)
+    client.send_message("/phone", float(proximity))
+    print(proximity)
 
 
 
@@ -203,19 +205,17 @@ if __name__ == "__main__":
     dispatcher.map("/cam1/3", cam1)
     dispatcher.map("/cam1/4", cam1)
 
-    cam1("/cam1/0", (0.3,0.2, 0.2, 0.2))
-
     # Sending data to functions to just if trespassing for cam2
-    #dispatcher.map("/cam2/0", cam2)
-    #dispatcher.map("/cam2/1", cam2)
-    #dispatcher.map("/cam2/2", cam2)
-    #dispatcher.map("/cam2/3", cam2)
-    #dispatcher.map("/cam2/4", cam2)
+    dispatcher.map("/cam2/0", cam2)
+    dispatcher.map("/cam2/1", cam2)
+    dispatcher.map("/cam2/2", cam2)
+    dispatcher.map("/cam2/3", cam2)
+    dispatcher.map("/cam2/4", cam2)
 
     # Getting the data from other computer
     ip = "192.168.43.37"
     port = 1337
     server = osc_server.ThreadingOSCUDPServer(
         (ip, port), dispatcher)
-    #print("Serving on {}".format(server.server_address))
+    print("Serving on {}".format(server.server_address))
     server.serve_forever()
